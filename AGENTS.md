@@ -1,70 +1,198 @@
 # EverDryPack Operations System
 ## `AGENTS.md`
 
-This file defines how AI coding agents should work on the EverDryPack project.
+This file defines how AI coding agents such as Codex should work on the EverDryPack project.
 
-The goal is to keep implementation aligned with the approved product requirements, UI design, factory SOP, role permissions, and data integrity rules.
+The goal is to keep implementation aligned with:
+
+1. `prd.md`
+2. `design.md`
+3. this `AGENTS.md`
+4. the approved EverDryPack SOP
+5. the existing repository structure and database
+
+The application is an internal manufacturing operations system for Ever Drypack Malaysia Sdn. Bhd.
 
 ---
 
-# 1. Project Context
+# 1. Core Product Principle
 
-EverDryPack is an internal manufacturing operations system for Ever Drypack Malaysia Sdn. Bhd.
+EverDryPack must not be built as a collection of unrelated digital paper forms.
 
-The system digitises and connects:
+It is one connected manufacturing workflow:
 
 ```text
-Order
-→ Material Requirement
-→ Purchasing
-→ Receiving / GRN
-→ Incoming QC
-→ Store
-→ Production Scheduling
-→ Production Run
-→ In-Process QC / SPC
-→ Finished Goods
-→ Final QC
-→ Delivery
-→ Reports
+Admin Order Entry
+        ↓
+Material Requirement
+        ↓
+Store Stock Check / Reservation
+        ↓
+Purchasing if Material Shortage
+        ↓
+Supplier Delivery
+        ↓
+Store Receiving / GRN
+        ↓
+Incoming QC
+        ↓
+Released Inventory
+        ↓
+Admin Production Scheduling
+        ↓
+Store Material Issue
+        ↓
+Production / Operator
+        ↓
+In-Process QC / SPC
+        ↓
+Finished Goods
+        ↓
+Store Finished-Goods Receipt
+        ↓
+Final QC
+        ↓
+Delivery
+        ↓
+Reports / MD Dashboard
 ```
 
-The system must follow the company's existing SOP while reducing manual data entry.
+The core software rule is:
 
-The core principle is:
-
-> Enter data once, reuse it everywhere, and only show each department the information they need.
+> **Enter data once, reuse it everywhere, and automatically send each department only the information they need.**
 
 ---
 
 # 2. Source of Truth
 
-When implementing features, use these documents in this priority order:
+Before implementing any feature, read:
 
-1. `prd.md`
-2. `design.md`
-3. `AGENTS.md`
-4. Existing database schema
-5. Existing code behavior
+```text
+prd.md
+design.md
+AGENTS.md
+```
 
-If existing code conflicts with `prd.md`, prefer the PRD unless the requested task explicitly says otherwise.
+Priority when documents conflict:
 
-If UI behavior conflicts with `design.md`, prefer the design specification unless the task explicitly overrides it.
+1. Explicit instruction from the current task
+2. `prd.md` for business/SOP requirements
+3. `design.md` for UI, UX, frontend structure, and current technical architecture
+4. `AGENTS.md` for coding and implementation rules
+5. Existing schema/code
 
-Do not invent business rules that are not documented.
+Do not invent undocumented business rules.
 
-If a requirement is genuinely ambiguous, choose the simplest implementation that:
+If a real company value is unknown, make it configurable or leave a clearly identified placeholder rather than hard-coding a planning example.
 
-- preserves the SOP,
-- minimizes duplicate entry,
-- protects data integrity,
-- and can be extended later.
+Examples of values that must come from company master data:
+
+- product production rate,
+- packets per carton,
+- QC weight limits,
+- QC frequency,
+- QC sample size,
+- BOM quantities,
+- machine compatibility,
+- reorder levels,
+- supplier lead time,
+- final QC sampling rules.
 
 ---
 
-# 3. Current User Roles
+# 3. Approved Tech Stack
 
-The MVP contains six roles:
+Use this stack unless the user explicitly changes it.
+
+## Frontend
+
+```text
+Vite
+React.js
+JavaScript
+Tailwind CSS
+React Router DOM
+```
+
+Recommended frontend libraries:
+
+```text
+TanStack Query
+React Hook Form
+Zod
+Recharts
+Lucide React
+```
+
+## Backend
+
+```text
+Node.js
+Express.js
+JavaScript
+```
+
+## Database
+
+```text
+PostgreSQL
+Neon PostgreSQL
+```
+
+## ORM
+
+```text
+Prisma
+```
+
+## Architecture
+
+```text
+Separate frontend and backend
+REST API
+Route → Middleware → Controller → Service → Prisma/Repository
+Role-based access control
+```
+
+---
+
+# 4. Technology Restrictions
+
+Do **not** introduce:
+
+- Next.js
+- TypeScript
+- `.ts`
+- `.tsx`
+- Next.js Server Actions
+- Next.js API routes
+- Next.js Server Components
+- unnecessary microservices
+- unnecessary Redis
+- unnecessary message queues
+- unnecessary Kubernetes
+- GraphQL unless explicitly requested
+
+Use JavaScript throughout the MVP.
+
+Frontend files should normally use:
+
+```text
+.js
+.jsx
+```
+
+Backend files should use:
+
+```text
+.js
+```
+
+---
+
+# 5. Current User Roles
+
+The MVP contains exactly six operational roles:
 
 ```text
 MD
@@ -75,109 +203,99 @@ PURCHASING
 STORE
 ```
 
-Do not add extra roles unless explicitly requested.
+Do not add roles unless explicitly requested.
 
 ---
 
-# 4. Role Responsibilities
+# 6. Role Ownership
 
 ## MD
 
-Primary purpose:
+Main purpose:
 
-- Monitor the business.
-- View production.
-- View risks.
-- View QC.
-- View inventory.
-- View deliveries.
-- View reports.
+- view factory performance,
+- view production,
+- view risks,
+- view shortages,
+- view QC,
+- view deliveries,
+- view reports.
 
-MD is mostly read-only.
+MD is mainly read-only.
 
----
+## ADMIN
 
-## Admin
+Main purpose:
 
-Primary purpose:
+- key customer/production orders,
+- coordinate operations,
+- review material readiness,
+- confirm production scheduling,
+- maintain master data,
+- manage users,
+- view reports.
 
-- Key in customer orders.
-- Manage scheduling.
-- Manage master data.
-- Monitor operational workflow.
-- Manage users where permitted.
-
-Admin is the owner of production scheduling.
-
----
+Admin owns the production schedule.
 
 ## QC
 
-Primary purpose:
+Main purpose:
 
-- Incoming inspection.
-- In-process QC.
-- SPC monitoring.
-- Final inspection.
-- Quality release / rejection.
+- incoming inspection,
+- material release/rejection,
+- in-process QC,
+- SPC,
+- corrective-action checks,
+- final inspection,
+- calibration where assigned.
 
 QC owns quality decisions.
 
----
+## OPERATOR
 
-## Operator
+Main purpose:
 
-Primary purpose:
+- run assigned production,
+- start/pause/resume/end jobs,
+- submit required production/QC data,
+- record defects,
+- record downtime,
+- complete cartons.
 
-- Execute production.
-- Start / pause / resume / stop jobs.
-- Enter required QC samples.
-- Record defects.
-- Record downtime.
-- Complete cartons.
+Operator UI must remain extremely simple.
 
-Operator UI must remain simple.
+## PURCHASING
 
----
+Main purpose:
 
-## Purchasing
+- view material shortages,
+- create purchase orders,
+- manage suppliers,
+- manage supplier ETA.
 
-Primary purpose:
+Purchasing does not own physical inventory.
 
-- Handle material shortages.
-- Create purchase orders.
-- Manage supplier ETA.
-- Maintain suppliers.
+## STORE
 
-Purchasing does not manage physical inventory.
+Main purpose:
 
----
-
-## Store
-
-Primary purpose:
-
-- Receive materials.
-- Create GRN.
-- Manage physical inventory.
-- Reserve materials.
-- Issue materials to production.
-- Receive finished goods.
-- Prepare goods for delivery.
+- receive physical goods,
+- create GRN,
+- manage stock,
+- reserve materials,
+- issue materials,
+- receive finished goods,
+- prepare goods for delivery.
 
 Store owns physical stock movement.
 
 ---
 
-# 5. Business Workflow Rules
+# 7. Mandatory SOP Rules
 
-These rules are mandatory.
+## 7.1 Incoming Goods
 
-## 5.1 Incoming Material
-
-Received material must not become production-usable stock immediately.
-
-Required flow:
+Received goods must follow:
 
 ```text
 RECEIVED
@@ -185,87 +303,1080 @@ RECEIVED
 → RELEASED / REJECTED
 ```
 
-Only released stock is counted as available.
+Received goods must not become usable production stock before QC release.
 
----
+## 7.2 Inventory Availability
 
-## 5.2 Production Start
+Only released stock can count as production-available.
 
-Production cannot start unless:
+Inventory must distinguish at minimum:
 
-- the order is scheduled,
-- the machine is available,
-- required material is released,
-- required material has been issued by Store.
+```text
+AVAILABLE
+RESERVED
+QUARANTINE
+REJECTED
+WIP
+FINISHED_GOODS
+```
 
----
+## 7.3 Production Start
 
-## 5.3 Scheduling
+Production must not start unless:
+
+- order is scheduled,
+- machine is available,
+- required material has passed QC,
+- required material has been issued by Store,
+- no conflicting active production run exists.
+
+## 7.4 Scheduling
 
 Scheduling is semi-automatic.
 
-The system may recommend:
+The backend may recommend:
 
 - machine,
 - earliest start,
-- run time,
-- completion time,
+- estimated runtime,
+- estimated completion,
 - delivery risk.
 
-Admin must confirm the schedule.
+Admin confirms the schedule.
 
-Do not silently reschedule production orders.
+Never silently reschedule an order.
 
----
+## 7.5 In-Process QC
 
-## 5.4 QC Sampling
-
-For current silica gel production:
+Current silica gel workflow uses:
 
 ```text
-Frequency: every 20 minutes
+QC interval: 20 minutes
 Sample size: 4 packets
 ```
 
-These values must be configurable.
+These values must be configurable per product/specification.
 
-Do not hard-code them globally if a product-specific setting exists.
+## 7.6 Finished Goods
 
----
-
-## 5.5 Incoming Moisture Rule
-
-For current silica gel incoming inspection:
-
-```text
-Moisture < 2.5%  → ACCEPT
-Moisture > 2.5%  → REJECT
-```
-
-Keep threshold configurable in product/material QC specification data.
-
----
-
-## 5.6 Finished Goods
-
-A completed carton is not automatically ready for delivery.
-
-Required flow:
+Finished goods flow:
 
 ```text
 Production Complete
-→ Store Receives Finished Goods
+→ Store Receipt
 → Final QC
 → Ready for Delivery
 ```
 
+A finished carton is not automatically ready for delivery.
+
 ---
 
-## 5.7 Inventory
+# 8. Repository Structure
 
-Inventory must be transaction-based.
+Prefer a simple monorepo-style layout:
 
-Do not directly overwrite stock totals without a corresponding transaction record.
+```text
+everdrypack/
+├─ frontend/
+├─ backend/
+├─ prd.md
+├─ design.md
+├─ AGENTS.md
+└─ README.md
+```
+
+If the existing repository uses a different but clean layout, do not restructure it unnecessarily.
+
+---
+
+# 9. Frontend Structure
+
+Recommended:
+
+```text
+frontend/
+├─ src/
+│  ├─ api/
+│  ├─ assets/
+│  ├─ components/
+│  │  ├─ layout/
+│  │  ├─ common/
+│  │  ├─ orders/
+│  │  ├─ schedule/
+│  │  ├─ purchasing/
+│  │  ├─ store/
+│  │  ├─ receiving/
+│  │  ├─ qc/
+│  │  ├─ production/
+│  │  ├─ finishedGoods/
+│  │  ├─ delivery/
+│  │  └─ reports/
+│  ├─ pages/
+│  ├─ hooks/
+│  ├─ context/
+│  ├─ routes/
+│  ├─ utils/
+│  ├─ constants/
+│  ├─ App.jsx
+│  └─ main.jsx
+├─ public/
+├─ index.html
+├─ vite.config.js
+└─ package.json
+```
+
+Do not create one huge `App.jsx`.
+
+---
+
+# 10. Backend Structure
+
+Use the route/controller/service style requested for this project.
+
+Recommended:
+
+```text
+backend/
+├─ src/
+│  ├─ config/
+│  ├─ routes/
+│  ├─ controllers/
+│  ├─ services/
+│  ├─ repositories/
+│  ├─ middleware/
+│  ├─ validators/
+│  ├─ utils/
+│  ├─ constants/
+│  ├─ jobs/
+│  ├─ app.js
+│  └─ server.js
+├─ prisma/
+│  ├─ schema.prisma
+│  ├─ migrations/
+│  └─ seed.js
+├─ .env.example
+└─ package.json
+```
+
+Do not put the whole backend in `server.js`.
+
+---
+
+# 11. Backend Layer Responsibilities
+
+## Routes
+
+Routes define:
+
+- path,
+- HTTP method,
+- middleware,
+- controller.
+
+Example:
+
+```js
+router.post(
+  "/orders",
+  authenticate,
+  authorize("ADMIN"),
+  validate(createOrderSchema),
+  orderController.createOrder
+);
+```
+
+No complex business logic in route files.
+
+## Middleware
+
+Use middleware for:
+
+```text
+authentication
+authorization
+validation
+error handling
+request logging
+```
+
+## Controllers
+
+Controllers should be thin:
+
+1. read request inputs,
+2. call a service,
+3. send response.
+
+Do not place scheduling, inventory, or QC calculations in controllers.
+
+## Services
+
+Services contain authoritative business logic.
+
+Examples:
+
+```text
+authService
+orderService
+scheduleService
+materialRequirementService
+purchaseService
+receivingService
+inventoryService
+qcService
+productionService
+finishedGoodsService
+deliveryService
+notificationService
+auditService
+reportService
+```
+
+## Repositories
+
+Repositories may contain reusable Prisma queries.
+
+Use them when they improve reuse and readability; do not add boilerplate only for architecture's sake.
+
+---
+
+# 12. REST API Principles
+
+Base API path:
+
+```text
+/api
+```
+
+Examples:
+
+```text
+GET    /api/orders
+POST   /api/orders
+GET    /api/orders/:id
+PATCH  /api/orders/:id
+
+POST   /api/orders/:id/schedule
+GET    /api/schedule
+
+GET    /api/material-shortages
+
+GET    /api/purchase-orders
+POST   /api/purchase-orders
+
+GET    /api/grns
+POST   /api/grns
+POST   /api/grns/:id/submit-qc
+
+GET    /api/qc/incoming
+POST   /api/qc/incoming/:grnId
+
+GET    /api/inventory
+POST   /api/material-issues
+
+POST   /api/production-runs/:id/start
+POST   /api/production-runs/:id/pause
+POST   /api/production-runs/:id/resume
+POST   /api/production-runs/:id/end
+
+POST   /api/production-runs/:id/defects
+POST   /api/production-runs/:id/cartons
+
+POST   /api/qc/production-checks
+
+POST   /api/finished-goods/transfers
+POST   /api/finished-goods/transfers/:id/receive
+
+POST   /api/final-qc/:batchId
+
+GET    /api/deliveries
+POST   /api/deliveries/:id/dispatch
+POST   /api/deliveries/:id/complete
+```
+
+---
+
+# 13. API Response Format
+
+Success:
+
+```json
+{
+  "success": true,
+  "data": {}
+}
+```
+
+Error:
+
+```json
+{
+  "success": false,
+  "message": "Material has not been released by QC."
+}
+```
+
+Validation error:
+
+```json
+{
+  "success": false,
+  "message": "Validation failed.",
+  "errors": {
+    "quantity": "Quantity must be greater than 0."
+  }
+}
+```
+
+Do not expose raw Prisma/database errors to users.
+
+---
+
+# 14. Frontend API Access
+
+Use one centralized API client:
+
+```text
+frontend/src/api/apiClient.js
+```
+
+It should handle:
+
+- API base URL,
+- credentials,
+- JSON parsing,
+- common error transformation,
+- authentication behavior.
+
+Domain API files may include:
+
+```text
+authApi.js
+ordersApi.js
+scheduleApi.js
+purchaseApi.js
+inventoryApi.js
+receivingApi.js
+qcApi.js
+productionApi.js
+finishedGoodsApi.js
+deliveryApi.js
+reportsApi.js
+```
+
+Do not scatter hard-coded backend URLs through components.
+
+---
+
+# 15. React State Rules
+
+Use local React state for:
+
+- modal state,
+- local form UI,
+- selected item,
+- temporary UI filters.
+
+Recommended for server state:
+
+```text
+TanStack Query
+```
+
+Use it for:
+
+- fetching,
+- mutations,
+- caching,
+- query invalidation,
+- loading/error states.
+
+Do not copy all backend data into global React context.
+
+---
+
+# 16. Authentication
+
+Authentication must be enforced by Express.
+
+Requirements:
+
+- secure login,
+- password hashing,
+- authenticated user endpoint,
+- secure cookie/session or well-designed token approach,
+- backend role checks,
+- logout.
+
+Never store plain-text passwords.
+
+Never depend solely on frontend route guards.
+
+---
+
+# 17. Authorization
+
+Frontend may hide irrelevant navigation/actions for UX.
+
+Backend always enforces role/permission.
+
+Example:
+
+```text
+Operator calls POST /api/purchase-orders
+→ HTTP 403
+```
+
+even if the request is manually sent.
+
+---
+
+# 18. Permission Helpers
+
+Centralize authorization.
+
+Prefer middleware/helpers such as:
+
+```js
+authorize("ADMIN")
+authorizeAny(["ADMIN", "STORE"])
+```
+
+Do not duplicate role checks throughout the codebase.
+
+---
+
+# 19. Database / Prisma Rules
+
+Use PostgreSQL through Prisma.
+
+Neon may host PostgreSQL.
+
+Use:
+
+```text
+DATABASE_URL
+```
+
+from environment configuration.
+
+Never commit production credentials.
+
+---
+
+# 20. Main Data Entities
+
+Expected domain entities include:
+
+```text
+User
+Customer
+Supplier
+Product
+ProductSpec
+Material
+ProductMaterial
+Machine
+Order
+ProductionSchedule
+ProductionRun
+Batch
+Carton
+
+PurchaseOrder
+PurchaseOrderItem
+
+GoodsReceived
+GoodsReceivedItem
+
+IncomingQcInspection
+ProductionQcCheck
+ProductionQcSample
+FinalQcInspection
+
+Defect
+DowntimeRecord
+CorrectiveAction
+
+MaterialRequest
+MaterialIssue
+
+InventoryTransaction
+InventoryReservation
+
+FinishedGoodsTransfer
+FinishedGoodsTransferItem
+
+Delivery
+DeliveryItem
+
+Equipment
+Calibration
+
+Notification
+AuditLog
+```
+
+Exact model names may vary if the existing schema already uses clear names.
+
+---
+
+# 21. Human-Readable Document Numbers
+
+Use database IDs internally and readable business numbers externally.
+
+Examples:
+
+```text
+SO-20260921-001
+PO-20260921-003
+GRN-20260921-004
+BATCH-20260921-01
+CTN-20260921-0001
+FGT-20260921-001
+DO-20260921-001
+```
+
+Generate these on the server.
+
+---
+
+# 22. Validation
+
+Every mutating endpoint must validate:
+
+- required fields,
+- strings/enums,
+- quantity > 0,
+- valid dates,
+- IDs,
+- permissions,
+- current workflow status.
+
+Client validation improves UX.
+
+Backend validation is authoritative.
+
+Recommended:
+
+```text
+Zod
+```
+
+or another consistent validation library.
+
+---
+
+# 23. Numbers and Units
+
+Use integers for exact counts such as:
+
+```text
+packet count
+carton count
+sample count
+```
+
+Use Prisma Decimal for values requiring precision:
+
+```text
+weight
+kg
+grams
+percentage
+material quantity
+```
+
+---
+
+# 24. Dates and Time
+
+Store timestamps consistently, preferably UTC.
+
+Display Malaysia time in the UI:
+
+```text
+Asia/Kuala_Lumpur
+```
+
+Do not perform schedule calculations using formatted date strings.
+
+---
+
+# 25. Order Creation Workflow
+
+When Admin creates an order:
+
+1. validate user/input,
+2. create order,
+3. generate internal order number,
+4. load product master,
+5. calculate material requirement,
+6. compare against released inventory,
+7. identify shortage,
+8. create shortage task if required,
+9. calculate schedule recommendation,
+10. create role-specific notifications,
+11. create audit log.
+
+Do not make Admin re-enter known product/system values.
+
+---
+
+# 26. BOM / Material Requirements
+
+Material requirements come from Product BOM/master data.
+
+Concept:
+
+```text
+Product BOM
+×
+Order Quantity
+=
+Material Requirements
+```
+
+Do not manually duplicate materials in every order.
+
+Preserve historical requirement values if master data can later change.
+
+---
+
+# 27. Material Availability
+
+Concept:
+
+```text
+AVAILABLE =
+released on-hand
+- reserved
+- blocked
+```
+
+Do not count:
+
+```text
+quarantine
+rejected
+unreleased GRN stock
+```
+
+as production-available.
+
+---
+
+# 28. Material Shortage Workflow
+
+If stock cannot cover requirements:
+
+```text
+WAITING_MATERIAL
+```
+
+Create a shortage/task record with:
+
+```text
+productionOrderId
+materialId
+requiredQty
+availableQty
+shortageQty
+requiredBy
+priority
+status
+```
+
+Purchasing should receive this automatically.
+
+---
+
+# 29. Purchase Order Workflow
+
+When creating a PO from a shortage, prefill where possible:
+
+- material,
+- shortage quantity,
+- required-by date,
+- linked order.
+
+Supplier ETA must feed back into material/schedule readiness.
+
+Purchasing does not perform QC release or physical stock adjustment.
+
+---
+
+# 30. GRN / Receiving
+
+Store creates the GRN.
+
+Physical receipt may create stock in:
+
+```text
+QUARANTINE / PENDING_QC
+```
+
+not `AVAILABLE`.
+
+Flow:
+
+```text
+DRAFT
+→ RECEIVED
+→ PENDING_QC
+→ RELEASED / REJECTED
+```
+
+---
+
+# 31. Incoming QC
+
+QC receives GRN/material information automatically and enters only inspection-specific data.
+
+For current configured silica gel rule:
+
+```text
+Moisture below 2.5% = Accept
+Moisture above 2.5% = Reject
+```
+
+Do not invent the equality-at-2.5 behavior if the company has not confirmed it.
+
+Keep QC rules configurable.
+
+---
+
+# 32. Critical QC Transactions
+
+QC release should be atomic where practical:
+
+1. save inspection result,
+2. update inventory state,
+3. create inventory transaction,
+4. update linked production readiness,
+5. create notification,
+6. create audit log.
+
+Use Prisma transactions for multi-write critical actions.
+
+---
+
+# 33. Production Scheduling
+
+Backend owns scheduling calculations.
+
+Inputs may include:
+
+```text
+required delivery date
+product
+quantity
+compatible machines
+machine availability
+current schedule
+production rate
+material readiness
+supplier ETA
+maintenance
+changeover
+```
+
+Output:
+
+```text
+recommendedMachine
+estimatedRuntime
+earliestStart
+estimatedCompletion
+deliveryRisk
+conflicts
+```
+
+Admin confirms.
+
+---
+
+# 34. Schedule Conflicts
+
+Backend must prevent:
+
+- two jobs using the same machine at conflicting times,
+- start on an unavailable machine,
+- invalid start/end dates.
+
+Frontend checks are helpful but not sufficient.
+
+---
+
+# 35. Operator UI
+
+Normal primary actions:
+
+```text
+Start Production
+QC Check
+Record Defect
+Pause / Downtime
+Complete Carton
+End Production
+```
+
+Do not add unrelated controls.
+
+---
+
+# 36. Production Start
+
+Before starting, server validates:
+
+```text
+scheduled order
+material released
+material issued
+machine available
+no conflicting run
+authorized operator
+```
+
+Store:
+
+```text
+productionRun
+machine
+operator
+batch
+product
+targetQty
+actualStartTime
+```
+
+---
+
+# 37. QC Reminder Logic
+
+Do not rely only on browser timers.
+
+Backend should expose authoritative timing such as:
+
+```text
+lastQcAt
+nextQcDueAt
+qcFrequencyMinutes
+```
+
+Frontend may display a countdown.
+
+Current default planning rule:
+
+```text
+20 minutes
+4 samples
+```
+
+but configurable product rules are authoritative.
+
+---
+
+# 38. Production QC
+
+Persist raw sample values:
+
+```text
+w1
+w2
+w3
+w4
+```
+
+Backend calculates:
+
+```text
+minimum
+maximum
+average
+pass/fail
+```
+
+Never store only the average.
+
+---
+
+# 39. QC Limits
+
+Use product/specification master values.
+
+Do not hard-code mockup example values.
+
+If configured limits are inclusive, test exact boundaries.
+
+---
+
+# 40. SPC
+
+SPC graphs use persisted QC data.
+
+Do not generate fake production QC points.
+
+Keep separate where appropriate:
+
+```text
+CL
+UCL
+LCL
+acceptance minimum
+acceptance maximum
+```
+
+---
+
+# 41. QC Failure
+
+A failed required QC check may trigger:
+
+```text
+FAIL
+→ Operator alert
+→ QC alert
+→ Admin alert
+→ QC_HOLD
+→ corrective action
+→ authorized release
+```
+
+Never automatically resume production after a failed QC.
+
+---
+
+# 42. Defects
+
+Defect records should link to:
+
+```text
+productionRun
+order
+batch
+machine
+operator
+timestamp
+defect type
+quantity
+remarks
+```
+
+Use defect master data where available.
+
+---
+
+# 43. Downtime
+
+Downtime records include:
+
+```text
+productionRun
+machine
+start
+end
+duration
+reason
+remarks
+operator
+```
+
+Calculate duration from timestamps where possible.
+
+---
+
+# 44. Estimated vs Confirmed Output
+
+Keep distinct:
+
+```text
+estimatedOutput
+confirmedFinishedQuantity
+```
+
+Estimated output may use running time × machine rate.
+
+Confirmed output comes from accepted carton/finished-good records.
+
+Never display estimated output as exact accepted output.
+
+---
+
+# 45. Carton Completion
+
+Carton records may include:
+
+```text
+cartonNumber
+batchId
+productionRunId
+productId
+quantity
+weightConfirmed
+appearancePassed
+labelPassed
+status
+completedBy
+completedAt
+```
+
+Auto-fill known context.
+
+---
+
+# 46. Finished Goods Transfer
+
+Generate transfer details from existing production records.
+
+Production should not re-enter:
+
+- product,
+- machine,
+- operator,
+- batch,
+- cartons,
+- known timestamps.
+
+Store enters receipt-specific information.
+
+---
+
+# 47. Final QC
+
+Finished goods cannot become Ready for Delivery if required final QC is not accepted.
+
+Possible results:
+
+```text
+ACCEPT
+REJECT
+HOLD / MRB
+```
+
+---
+
+# 48. Delivery
+
+Delivery references:
+
+```text
+order
+customer
+approved finished goods
+batch
+cartons
+quantity
+```
+
+Validate final QC acceptance before dispatch.
+
+---
+
+# 49. Inventory Model
+
+Every stock movement requires a transaction.
 
 Examples:
 
@@ -276,18 +1387,546 @@ QC_REJECTION
 RESERVATION
 MATERIAL_ISSUE
 MATERIAL_RETURN
+PRODUCTION_WIP
 FINISHED_GOODS_RECEIPT
 DELIVERY_OUT
 STOCK_ADJUSTMENT
 ```
 
+Do not directly overwrite stock totals without an auditable transaction.
+
 ---
 
-# 6. Core Order Statuses
+# 50. Audit Trail
 
-Use clear internal enums.
+Audit at minimum:
+
+```text
+order create/update/cancel
+schedule confirm/change
+PO create/update
+GRN create/update
+QC decision
+stock adjustment
+material issue
+production start/pause/resume/end
+QC sample edit
+defect edit
+carton completion/edit
+finished-goods receipt
+final QC
+delivery dispatch/complete
+user/role change
+```
+
+Do not log secrets or passwords.
+
+---
+
+# 51. Notifications
+
+Role-specific examples:
+
+## Admin
+- shortage,
+- schedule conflict,
+- QC failure,
+- production delay,
+- order at risk.
+
+## QC
+- incoming inspection,
+- QC overdue,
+- final QC pending.
+
+## Purchasing
+- material shortage,
+- supplier/ETA issue.
+
+## Store
+- incoming delivery,
+- material request,
+- finished goods awaiting receipt.
+
+## Operator
+- job ready,
+- QC due,
+- QC hold.
+
+## MD
+- critical shortage,
+- critical QC issue,
+- production delay,
+- delivery risk.
+
+Avoid duplicate notifications on refresh.
+
+---
+
+# 52. Frontend Design Rules
+
+Follow `design.md`.
+
+The interface must be:
+
+```text
+professional
+clean
+corporate
+industrial
+minimal
+data-first
+easy to scan
+```
+
+Brand:
+
+```text
+EverDryPack Blue
+EverDryPack Orange
+White
+Neutral Gray
+```
+
+Functional colors:
+
+```text
+Green = success
+Amber = warning
+Red = failure
+Gray = inactive
+```
+
+---
+
+# 53. UI Restrictions
+
+Do not create:
+
+- cartoon UI,
+- emoji navigation,
+- giant colorful cards,
+- excessive gradients,
+- unnecessary illustrations,
+- random colors for each module,
+- text-heavy operator screens.
+
+Prefer:
+
+- compact tables,
+- clear forms,
+- subtle cards,
+- professional icons,
+- clear status badges,
+- simple charts,
+- clear primary buttons.
+
+---
+
+# 54. React Component Rules
+
+Keep components focused.
+
+Good examples:
+
+```text
+OrderForm
+OrderStatusTimeline
+ScheduleRecommendation
+InventoryTable
+GrnForm
+QcSampleForm
+SpcChart
+OperatorJobCard
+ProductionControls
+CompleteCartonModal
+```
+
+Do not build huge components that contain fetching, authorization, business logic, and many unrelated forms.
+
+---
+
+# 55. React Router
+
+Use React Router DOM.
+
+Do not build application navigation with a giant conditional switch in `App.jsx`.
+
+Use protected and role-aware routes for UX.
+
+Backend authorization remains authoritative.
+
+---
+
+# 56. Forms
 
 Recommended:
+
+```text
+React Hook Form
+Zod
+```
+
+Client validation is for UX.
+
+Backend validation is mandatory.
+
+---
+
+# 57. Tables
+
+Operational list pages should usually be table-based.
+
+Support:
+
+- pagination,
+- search,
+- filtering,
+- status,
+- row actions.
+
+Do not retrieve unlimited records.
+
+---
+
+# 58. Charts
+
+Recommended:
+
+```text
+Recharts
+```
+
+Appropriate for:
+
+- production trend,
+- SPC,
+- reject breakdown,
+- machine utilization,
+- delivery trend.
+
+Do not chart data that is clearer in a table.
+
+---
+
+# 59. Async UI
+
+Every data screen should handle:
+
+```text
+loading
+success
+empty
+error
+```
+
+Mutations should:
+
+1. disable submit,
+2. prevent duplicate calls,
+3. display result,
+4. invalidate/refetch relevant queries.
+
+---
+
+# 60. Express Error Handling
+
+Use centralized error middleware.
+
+Typical mapping:
+
+```text
+400 bad input/business validation
+401 unauthenticated
+403 unauthorized
+404 not found
+409 conflict/state conflict
+500 unexpected server error
+```
+
+Do not return server stack traces to normal users.
+
+---
+
+# 61. Prisma Transactions
+
+Use `$transaction` for critical multi-step changes such as:
+
+- QC release + inventory movement,
+- material issue + stock transaction,
+- carton completion + confirmed finished quantity,
+- FG receipt + stock increase,
+- delivery + finished-goods deduction.
+
+---
+
+# 62. Historical Integrity
+
+Avoid hard deleting:
+
+```text
+orders
+production runs
+QC records
+inventory transactions
+GRNs
+finished goods
+deliveries
+audit logs
+```
+
+Use inactive/archive behavior for master data where needed.
+
+---
+
+# 63. Pagination / Performance
+
+List APIs should support parameters such as:
+
+```text
+page
+limit
+search
+status
+dateFrom
+dateTo
+```
+
+Avoid large unnecessary Prisma `include` trees.
+
+---
+
+# 64. Security
+
+Never expose:
+
+- database credentials,
+- auth secrets,
+- password hashes,
+- server environment variables.
+
+Browser-safe frontend variables may use:
+
+```text
+VITE_API_URL
+```
+
+Do not expose secrets via `VITE_*`.
+
+---
+
+# 65. CORS
+
+Frontend and backend are separate applications.
+
+Configure production CORS to allow the actual frontend origin.
+
+If using auth cookies, configure:
+
+- credentials,
+- secure,
+- sameSite,
+- allowed origin
+
+correctly.
+
+Do not leave unrestricted production CORS.
+
+---
+
+# 66. Environment Examples
+
+Frontend:
+
+```text
+frontend/.env.example
+
+VITE_API_URL=
+```
+
+Backend:
+
+```text
+backend/.env.example
+
+DATABASE_URL=
+PORT=
+FRONTEND_URL=
+AUTH_SECRET=
+```
+
+Never commit real `.env` values.
+
+---
+
+# 67. Seed Data
+
+Development seed data may include the six roles and two machines.
+
+Clearly mark sample values as development data.
+
+Do not let example product rates or QC limits silently become production defaults.
+
+---
+
+# 68. Testing Requirements
+
+At minimum cover:
+
+## Permissions
+
+```text
+Operator cannot create PO
+Purchasing cannot release QC
+Store cannot make QC decisions
+QC cannot manage users
+```
+
+## Inventory
+
+```text
+quarantine excluded
+released stock available
+reservation reduces availability
+material issue creates transaction
+delivery decreases FG
+```
+
+## Production
+
+```text
+cannot start without issued material
+machine conflicts prevented
+valid pause/resume
+```
+
+## QC
+
+```text
+four required samples where configured
+min/max/average
+pass/fail
+out-of-spec workflow
+```
+
+## Scheduling
+
+```text
+machine conflicts
+material-ready constraint
+Admin confirmation
+```
+
+---
+
+# 69. Coding Style
+
+Use modern readable JavaScript:
+
+```text
+const
+async/await
+small functions
+descriptive names
+clear error handling
+```
+
+Avoid clever one-liners when readability suffers.
+
+Use project ESLint/Prettier configuration if available.
+
+---
+
+# 70. JavaScript Safety
+
+Because TypeScript is intentionally not used:
+
+- validate API inputs,
+- validate important environment variables,
+- never trust browser object shapes,
+- use schemas for complex payloads,
+- add tests around business logic,
+- use JSDoc where it meaningfully improves clarity.
+
+Do not use the absence of TypeScript as a reason to weaken validation.
+
+---
+
+# 71. Naming Convention
+
+React:
+
+```text
+OrderForm.jsx
+StatusBadge.jsx
+OperatorJobCard.jsx
+```
+
+Hooks:
+
+```text
+useOrders.js
+useInventory.js
+```
+
+Backend example:
+
+```text
+order.routes.js
+order.controller.js
+order.service.js
+order.repository.js
+order.validator.js
+```
+
+Use one convention consistently.
+
+---
+
+# 72. Avoid Duplicate Logic
+
+Shared business functions may include:
+
+```text
+calculateMaterialRequirements()
+calculateAvailableStock()
+calculateQcResult()
+canStartProduction()
+getScheduleRecommendation()
+generateDocumentNumber()
+```
+
+Authoritative versions belong on the backend.
+
+---
+
+# 73. State Transitions
+
+Do not allow arbitrary status assignment from request bodies.
+
+Validate allowed transitions.
+
+Example:
+
+```text
+UNSCHEDULED
+→ WAITING_MATERIAL / SCHEDULED
+
+SCHEDULED
+→ READY
+
+READY
+→ RUNNING
+
+RUNNING
+→ PAUSED / QC_HOLD / PRODUCTION_COMPLETE
+```
+
+---
+
+# 74. Main Production Statuses
+
+Recommended internal statuses:
 
 ```text
 UNSCHEDULED
@@ -309,1811 +1948,391 @@ CANCELLED
 REJECTED
 ```
 
-UI labels should remain human-readable.
-
-Example:
-
-```text
-WAITING_MATERIAL → Waiting Material
-QC_HOLD          → QC Hold
-READY_FOR_DELIVERY → Ready for Delivery
-```
+UI uses readable labels.
 
 ---
 
-# 7. Preferred Tech Stack
-
-Use the current project stack when already established.
-
-Preferred architecture:
-
-```text
-Next.js
-TypeScript
-Tailwind CSS
-shadcn/ui
-PostgreSQL
-Prisma
-```
-
-Authentication may use the implementation already present in the project.
-
-Do not replace an existing auth solution without a strong reason.
-
----
-
-# 8. General Engineering Principles
-
-## 8.1 Keep the Architecture Simple
-
-Do not introduce:
-
-- microservices,
-- message queues,
-- event buses,
-- Redis,
-- complex workflow engines,
-- Kubernetes,
-- unnecessary background infrastructure
-
-unless the project genuinely requires them.
-
-The MVP should remain easy to deploy and maintain.
-
----
-
-## 8.2 Prefer Server-Side Enforcement
-
-Security and business rules must be enforced on the server.
-
-Hiding a button is not permission enforcement.
-
-Every mutating endpoint/server action must validate:
-
-- authenticated user,
-- user role,
-- permission,
-- input data,
-- current record state.
-
----
-
-## 8.3 Avoid Duplicate Business Logic
-
-If the same rule is used in multiple places, move it into a shared domain/service function.
-
-Examples:
-
-```text
-calculateMaterialRequirement()
-canStartProduction()
-calculateQcResult()
-calculateAvailableStock()
-getScheduleRecommendation()
-```
-
----
-
-## 8.4 Preserve Auditability
-
-Do not silently mutate critical historical records.
-
-Important changes should create an audit log.
-
----
-
-# 9. Project Structure Guidance
-
-Preferred structure:
-
-```text
-app/
-  (auth)/
-  dashboard/
-  orders/
-  schedule/
-  purchase/
-  store/
-  receiving/
-  qc/
-  production/
-  finished-goods/
-  delivery/
-  reports/
-  admin/
-
-components/
-  layout/
-  common/
-  orders/
-  schedule/
-  purchasing/
-  store/
-  receiving/
-  qc/
-  production/
-  finished-goods/
-  delivery/
-  reports/
-
-lib/
-  auth/
-  db/
-  permissions/
-  validation/
-  domain/
-  services/
-  utils/
-
-prisma/
-  schema.prisma
-
-types/
-```
-
-Keep domain logic out of React components where practical.
-
----
-
-# 10. Naming Conventions
-
-Use clear names.
-
-Good:
-
-```text
-productionOrder
-materialRequirement
-qcInspection
-inventoryTransaction
-finishedGoodsTransfer
-```
-
-Avoid vague names:
-
-```text
-data
-item2
-temp
-thing
-recordData
-```
-
----
-
-# 11. Database Naming
-
-Prefer singular Prisma model names and descriptive fields.
-
-Example:
-
-```prisma
-model ProductionOrder {
-  id               String   @id @default(cuid())
-  orderNumber      String   @unique
-  customerId       String
-  productId        String
-  quantity         Decimal
-  requiredDate     DateTime
-  status           ProductionOrderStatus
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-}
-```
-
-Do not use database fields whose meaning is unclear.
-
----
-
-# 12. IDs and Document Numbers
-
-Use database IDs internally.
-
-Use human-readable generated document numbers externally.
-
-Examples:
-
-```text
-SO-20260921-001
-PO-20260921-003
-GRN-20260921-004
-BATCH-20260921-01
-CTN-20260921-0001
-FGT-20260921-001
-DO-20260921-001
-```
-
-Document numbering must be generated on the server.
-
-Do not trust the client to generate unique business document numbers.
-
----
-
-# 13. Validation
-
-Use schema validation for every form and server action.
-
-Preferred:
-
-```text
-Zod
-```
-
-Validate:
-
-- required values,
-- positive quantity,
-- valid dates,
-- supported enums,
-- foreign-key existence,
-- permission,
-- business-state transitions.
-
-Example:
-
-A production quantity cannot be:
-
-```text
-0
-negative
-NaN
-undefined
-```
-
----
-
-# 14. Money and Quantity Data
-
-For important numeric values, avoid floating-point assumptions.
-
-Use:
-
-- `Decimal` in Prisma for weights and quantities when needed,
-- integer units for exact piece counts.
-
-Examples:
-
-```text
-pieces       → integer
-cartons      → integer
-kg           → Decimal
-grams        → Decimal
-percentage   → Decimal
-```
-
----
-
-# 15. Date and Time Rules
-
-Store timestamps consistently.
-
-Preferred:
-
-- database: UTC
-- display: application/user timezone
-
-For Malaysia deployment, UI commonly displays:
-
-```text
-Asia/Kuala_Lumpur
-```
-
-Do not perform schedule logic using formatted date strings.
-
-Use actual date objects/timestamps.
-
----
-
-# 16. Permission Enforcement
-
-Create reusable permission checks.
-
-Example:
-
-```ts
-requireRole(user, ["ADMIN"])
-requireRole(user, ["QC"])
-requireRole(user, ["STORE", "ADMIN"])
-```
-
-Or permission-based checks:
-
-```text
-MANAGE_ORDERS
-MANAGE_SCHEDULE
-MANAGE_PURCHASE_ORDERS
-MANAGE_GRN
-MANAGE_QC
-RUN_PRODUCTION
-MANAGE_INVENTORY
-VIEW_REPORTS
-```
-
-Do not scatter hard-coded role conditionals throughout the UI.
-
----
-
-# 17. UI Design Rules
-
-The UI must follow `design.md`.
-
-Key visual rules:
-
-- Professional
-- Industrial
-- Clean
-- White background
-- Blue primary
-- Orange accent
-- Compact cards
-- Table-focused
-- Minimal gradients
-- Minimal shadows
-- No cartoon-style UI
-
----
-
-# 18. EverDryPack Theme
-
-Primary brand:
-
-```text
-Blue
-Orange
-White
-Neutral gray
-```
-
-Functional colors:
-
-```text
-Green = success
-Amber = warning
-Red = failure
-Gray = inactive
-```
-
-Use colors consistently.
-
-Do not assign random colors to modules.
-
----
-
-# 19. Tables
-
-Transactional pages should primarily use tables.
-
-Use tables for:
-
-- production orders,
-- purchase orders,
-- GRNs,
-- inventory,
-- QC history,
-- finished goods,
-- deliveries,
-- users.
-
-Tables should support:
-
-- search,
-- filters,
-- pagination,
-- status badge,
-- action menu.
-
----
-
-# 20. Forms
-
-Forms should be compact and predictable.
-
-Layout:
-
-```text
-Label
-Input
-Helper/error
-```
-
-Do not hide required field labels inside placeholders.
-
-Buttons should follow this order when possible:
-
-```text
-Secondary actions → Primary action
-```
-
-Example:
-
-```text
-Cancel | Save Draft | Create Order
-```
-
----
-
-# 21. Operator UI Rules
-
-Operator screens are special.
-
-They must prioritize:
-
-1. Current job
-2. Material status
-3. Production status
-4. Next QC
-5. Main actions
-
-The normal production control buttons are:
-
-```text
-Start Production
-QC Check
-Record Defect
-Pause / Downtime
-Complete Carton
-End Production
-```
-
-Do not add unrelated controls to the operator home screen.
-
----
-
-# 22. Operator Button State
-
-## READY
-
-Enable:
-
-```text
-Start Production
-```
-
-Disable:
-
-```text
-QC Check
-Record Defect
-Pause
-Complete Carton
-End Production
-```
-
----
-
-## RUNNING
-
-Enable:
-
-```text
-QC Check
-Record Defect
-Pause
-Complete Carton
-End Production
-```
-
----
-
-## PAUSED
-
-Enable:
-
-```text
-Resume
-End Production
-```
-
----
-
-## QC HOLD
-
-Production resume must be disabled until release.
-
----
-
-# 23. Order Creation Logic
-
-When Admin creates an order:
-
-1. Validate customer.
-2. Validate product.
-3. Validate quantity.
-4. Validate required delivery date.
-5. Create order.
-6. Generate material requirement.
-7. Compare requirement against available released stock.
-8. Calculate shortage.
-9. Generate schedule recommendation.
-10. Create role-specific tasks/notifications.
-
-This should happen through domain/services, not in UI components.
-
----
-
-# 24. Material Requirement Logic
-
-Product BOM must drive material requirement.
-
-Do not manually duplicate materials inside every order.
-
-Example:
-
-```text
-Product
-  ↓
-ProductMaterial / BOM
-  ↓
-Order Quantity
-  ↓
-Required Materials
-```
-
-If product specification changes, historical production orders must preserve the material requirements actually used at the time.
-
-Consider snapshotting requirement values when the order is confirmed.
-
----
-
-# 25. Schedule Recommendation Logic
-
-Initial MVP recommendation can use:
-
-```text
-order quantity
-÷ standard production rate
-+ setup/changeover allowance
-```
-
-Also consider:
-
-- compatible machines,
-- existing scheduled jobs,
-- material-ready date,
-- maintenance blocks,
-- delivery date.
-
-Output:
-
-```text
-recommended machine
-earliest start
-estimated finish
-estimated duration
-material status
-risk
-```
-
-Do not claim prediction accuracy beyond available data.
-
----
-
-# 26. Material Availability
-
-Available stock should be calculated from released inventory.
-
-Conceptually:
-
-```text
-available =
-on_hand
-- reserved
-- quarantined
-- blocked
-```
-
-Avoid treating incoming GRN stock as available before release.
-
----
-
-# 27. Purchasing Task Generation
-
-When shortage exists:
-
-Create a material shortage record or task.
-
-It should contain:
-
-```text
-materialId
-productionOrderId
-requiredQty
-availableQty
-shortageQty
-requiredBy
-priority
-status
-```
-
-Purchasing should see this immediately.
-
----
-
-# 28. GRN Logic
-
-Store creates GRN.
-
-On initial save:
-
-- do not update usable stock.
-
-On physical receipt:
-
-- create stock in quarantine/received state.
-
-After QC release:
-
-- create release transaction.
-
-After rejection:
-
-- move to rejected state.
-
----
-
-# 29. Incoming QC Logic
-
-For each incoming inspection:
-
-Store:
-
-```text
-inspectedBy
-inspectionTime
-material
-GRN
-sampleMethod
-moisture
-appearance
-decision
-remarks
-```
-
-Decision should be server-validated against active specification rules where applicable.
-
----
-
-# 30. Production Start Logic
-
-Before start, server must verify:
-
-```text
-order.status == READY or SCHEDULED as allowed
-machine available
-required material issued
-no active conflicting production run
-user has RUN_PRODUCTION permission
-```
-
-Then create `ProductionRun`.
-
-Record:
-
-```text
-machine
-operator
-startTime
-order
-batch
-targetQty
-```
-
----
-
-# 31. QC Reminder Logic
-
-After production starts:
-
-Generate QC due times from:
-
-```text
-production start
-+
-qc frequency
-```
-
-For MVP, reminders can be calculated dynamically rather than requiring a background job for every interval.
-
-The UI can derive:
-
-```text
-nextQcDueAt
-```
-
-from last QC or production start.
-
-If notification persistence is required, use scheduled records/tasks.
-
----
-
-# 32. QC Calculation
-
-Given four weights:
-
-```text
-w1
-w2
-w3
-w4
-```
-
-Calculate:
-
-```text
-min
-max
-average
-```
-
-Validate each required sample against configured spec.
-
-Return:
-
-```text
-PASS
-FAIL
-```
-
-Store the raw values.
-
-Never store only the average.
-
----
-
-# 33. SPC Data
-
-SPC chart should use persisted QC samples/check results.
-
-Do not generate fake points.
-
-Return:
-
-```text
-sample sequence
-timestamp
-value / average
-UCL
-CL
-LCL
-```
-
-If control limits differ from product acceptance limits, keep them as separate fields.
-
----
-
-# 34. Defect Logic
-
-Defects must link to:
-
-```text
-productionRun
-order
-batch
-machine
-operator
-time
-type
-quantity
-remark
-```
-
-Do not subtract defects automatically from confirmed carton quantity unless business logic explicitly requires it.
-
-The company currently relies on confirmed finished/carton quantity rather than exact automatic packet count.
-
----
-
-# 35. Estimated vs Confirmed Output
-
-Keep both.
-
-Example:
-
-```text
-estimatedOutput
-confirmedFinishedQty
-```
-
-Estimated output may be based on:
-
-```text
-run time × machine rate
-```
-
-Confirmed output is based on:
-
-- carton completion,
-- verified quantity,
-- production records.
-
-Do not present estimated output as exact accepted production.
-
----
-
-# 36. Carton Completion
-
-On complete carton:
-
-Create a carton record.
-
-Fields should include:
-
-```text
-cartonNumber
-productionRunId
-batchId
-productId
-quantity
-weightConfirmed
-appearancePassed
-labelPassed
-completedBy
-completedAt
-status
-```
-
-Finished quantity should derive from accepted carton records.
-
----
-
-# 37. Finished Goods Transfer
-
-Do not ask users to retype data already known.
-
-Generate transfer data from:
-
-- batch,
-- carton,
-- machine,
-- operator,
-- product,
-- timestamps.
-
-Store only new information:
-
-- transfer confirmation,
-- Store receiver,
-- receipt time,
-- remarks.
-
----
-
-# 38. Final QC
-
-Final QC must reference finished goods/batch.
-
-Do not allow delivery-ready state without final QC acceptance when the product requires final QC.
-
----
-
-# 39. Delivery
-
-Delivery records should reference the original order and finished goods.
-
-Do not manually duplicate:
-
-- product,
-- customer,
-- order quantity
-
-if they can be derived.
-
-Allow actual shipped quantity and cartons to differ only through an explicit recorded adjustment.
-
----
-
-# 40. Audit Logging
-
-Audit these actions at minimum:
-
-```text
-order create/update/cancel
-schedule confirm/change
-purchase order create/update
-GRN create/update
-QC accept/reject
-stock adjustment
-material issue
-production start/pause/resume/end
-QC sample edit
-defect edit
-carton completion/edit
-finished goods transfer
-final QC
-delivery dispatch/complete
-user/role changes
-```
-
-Audit log should record:
-
-```text
-actor
-action
-entity
-entityId
-timestamp
-before
-after
-```
-
-Avoid putting sensitive passwords/tokens in audit data.
-
----
-
-# 41. Notifications
-
-Notifications should be targeted.
-
-Examples:
-
-## Admin
-
-- schedule risk,
-- material shortage,
-- QC failure,
-- production delay.
-
-## QC
-
-- incoming inspection pending,
-- QC check overdue,
-- final QC pending.
-
-## Purchasing
-
-- shortage,
-- supplier ETA delayed.
-
-## Store
-
-- incoming delivery,
-- material request,
-- finished goods awaiting receipt.
-
-## Operator
-
-- job ready,
-- QC due,
-- QC hold.
-
-## MD
-
-- critical shortage,
-- production at risk,
-- QC critical issue,
-- late delivery risk.
-
----
-
-# 42. Avoid Notification Spam
-
-Do not generate repeated identical alerts every page refresh.
-
-Notifications should have:
-
-```text
-type
-entityId
-dedupeKey
-createdAt
-readAt
-resolvedAt
-```
-
----
-
-# 43. Error Handling
-
-Every mutation should return a structured result.
-
-Example:
-
-```ts
-{
-  success: false,
-  error: "Material has not been released by QC."
-}
-```
-
-Do not expose raw database errors to the user.
-
-Log technical details server-side.
-
----
-
-# 44. Loading States
-
-For actions:
-
-```text
-Create Order
-Submitting...
-```
-
-Disable button during request.
-
-Prevent double submissions.
-
----
-
-# 45. Empty States
-
-Implement useful empty states.
-
-Example:
-
-```text
-No material shortages.
-All scheduled production currently has sufficient released stock.
-```
-
-Avoid empty white panels.
-
----
-
-# 46. Accessibility
-
-Minimum:
-
-- semantic HTML,
-- keyboard navigation,
-- visible focus,
-- labeled inputs,
-- adequate contrast,
-- status text in addition to color,
-- accessible dialogs.
-
----
-
-# 47. Responsive Behavior
-
-The primary experience is desktop/tablet.
-
-At narrower widths:
-
-- collapse sidebar,
-- allow tables to scroll locally,
-- stack metric cards,
-- keep critical action buttons visible.
-
-Do not redesign operator controls into tiny mobile buttons.
-
----
-
-# 48. Testing Requirements
-
-Add tests for critical business logic.
-
-At minimum:
-
-## Material
-
-- released stock counted,
-- quarantine stock excluded,
-- reservations reduce availability.
-
-## Production
-
-- cannot start without issued material,
-- cannot run two jobs on same machine simultaneously.
-
-## QC
-
-- pass/fail calculations,
-- four required samples,
-- spec boundary behavior.
-
-## Inventory
-
-- transactions change balances correctly,
-- delivery decreases finished goods,
-- material issue decreases available raw material.
-
-## Permissions
-
-- operator cannot create PO,
-- purchasing cannot approve QC,
-- QC cannot manage users,
-- MD cannot mutate restricted operational data unless allowed.
-
----
-
-# 49. Boundary Tests
-
-Test exact limits.
-
-Examples:
-
-If specification is:
-
-```text
-0.90 to 1.20
-```
-
-Define explicitly whether boundary values pass.
-
-Recommended:
-
-```text
->= lower
-<= upper
-```
-
-So:
-
-```text
-0.90 PASS
-1.20 PASS
-```
-
-For moisture:
-
-Clarify the exact equality rule in code.
-
-If SOP only says:
-
-```text
-Below 2.5 = Accept
-Above 2.5 = Reject
-```
-
-do not silently guess equality. Store the policy in a configurable specification and document the chosen behavior.
-
----
-
-# 50. Seed Data
-
-Development seed data should include:
-
-Users:
-
-```text
-MD User
-Admin User
-QC User
-Operator 1
-Purchasing User
-Store User
-```
-
-Machines:
-
-```text
-M-01
-M-02
-```
-
-Example products:
-
-```text
-Silica Gel 1g
-Silica Gel 2g
-Silica Gel 5g
-Activated Clay Desiccant
-```
-
-Example materials:
-
-```text
-Silica Gel
-Activated Clay
-Packing Roll
-Tyvek / Non-woven Paper
-Carton Box
-Label
-Ink
-```
-
-Do not use seed data as production assumptions.
-
----
-
-# 51. Logging
-
-Use structured logs for:
-
-- server errors,
-- critical workflow failures,
-- permission denials,
-- integration failures.
-
-Avoid excessive console logging in production.
-
----
-
-# 52. Performance
-
-Avoid:
-
-- loading all records without pagination,
-- unnecessary repeated queries,
-- fetching full object graphs for list pages.
-
-Use:
-
-- pagination,
-- selective columns,
-- indexed searchable fields,
-- server-side filtering.
-
-Likely indexes:
-
-```text
-orderNumber
-status
-requiredDate
-machineId
-materialId
-supplierId
-grnNumber
-batchNumber
-cartonNumber
-createdAt
-```
-
----
-
-# 53. Database Transactions
-
-Use database transactions for multi-step critical mutations.
-
-Examples:
-
-## QC Release
-
-```text
-update inspection
-create inventory transaction
-update inventory balance
-update material status
-update linked production readiness
-create audit log
-```
-
-These should succeed or fail together where practical.
-
----
-
-# 54. Soft Deletion
-
-Avoid deleting historical:
-
-- orders,
-- QC records,
-- inventory transactions,
-- production runs,
-- GRNs,
-- deliveries.
-
-For master data use:
-
-```text
-isActive
-archivedAt
-```
-
-where appropriate.
-
----
-
-# 55. API / Server Action Naming
-
-Use domain verbs.
-
-Examples:
-
-```text
-createProductionOrder
-confirmProductionSchedule
-createPurchaseOrder
-receiveGoods
-submitIncomingQc
-releaseMaterial
-issueMaterials
-startProduction
-pauseProduction
-resumeProduction
-recordDefect
-completeCarton
-submitFinalQc
-dispatchDelivery
-```
-
-Avoid generic actions like:
-
-```text
-saveData
-updateThing
-processItem
-```
-
----
-
-# 56. Form Autosave
-
-Do not add autosave everywhere.
-
-Use explicit save for important manufacturing records.
-
-Draft support is appropriate for:
-
-- order,
-- purchase order,
-- GRN.
-
-QC and production actions should generally be explicit submissions.
-
----
-
-# 57. Printing
-
-Print views must be separate from application chrome.
-
-Do not print:
-
-- sidebar,
-- top bar,
-- notification buttons,
-- action buttons.
-
-Print should show:
-
-- logo,
-- company,
-- document title,
-- number,
-- data,
-- approval metadata,
-- page/revision where needed.
-
----
-
-# 58. Existing Paper Forms
-
-Where the company expects the old paper format:
-
-- preserve required information,
-- generate the record from system data,
-- do not force users to fill the same form manually if the system already has the values.
+# 75. Legacy Paper Forms
 
 Digital workflow is primary.
 
-Printable form is output.
+Generate legacy forms from connected records where practical.
+
+Examples:
+
+- GRN,
+- Production Performance,
+- QC/SPC checklist,
+- Material Request,
+- Finished Goods Transfer,
+- Final Inspection,
+- Delivery record.
+
+Do not create an isolated database model for every old paper sheet if the data already exists in connected entities.
 
 ---
 
-# 59. Charts
+# 76. Synology NAS
 
-Use charts only where meaningful.
+The NAS may later support:
 
-Appropriate:
+- PDF archive,
+- backup export,
+- document storage,
+- internal archival.
 
-- production trend,
-- SPC,
-- reject breakdown,
-- delivery trend,
-- machine utilization.
-
-Avoid charts for simple 3-row lists.
-
-Use tables instead.
+Do not use Synology as the primary application database for MVP.
 
 ---
 
-# 60. UI Copy
+# 77. Export
 
-Use short operational wording.
+Official PDF/Excel exports should use authoritative system records.
 
-Good:
+Do not rely solely on scraping visible browser tables.
+
+---
+
+# 78. Accessibility
+
+Maintain:
+
+- labels,
+- keyboard access,
+- visible focus,
+- contrast,
+- readable statuses,
+- accessible dialogs,
+- tablet-friendly operator controls.
+
+---
+
+# 79. Responsive Priority
+
+Primary:
 
 ```text
-Material Ready
-Pending QC
-Issue Materials
-Start Production
-Complete Carton
-Ready for Delivery
+desktop
+office laptop
+production tablet
 ```
 
-Avoid:
+Mobile is secondary.
+
+Do not shrink operator actions into tiny buttons.
+
+---
+
+# 80. Implementation Phases
+
+## Phase 1 — Foundation
 
 ```text
-Click here to proceed with the next phase of your workflow
-```
-
----
-
-# 61. Confirmation Rules
-
-Require confirmation for destructive/high-impact actions:
-
-- reject QC,
-- cancel order,
-- end production,
-- stock adjustment,
-- delete draft if permanent.
-
-Do not add confirmation to every normal button.
-
----
-
-# 62. Code Quality
-
-All TypeScript should use strict types.
-
-Avoid:
-
-```ts
-any
-```
-
-unless integration constraints genuinely require it.
-
-Prefer:
-
-```ts
-unknown
-```
-
-with validation.
-
-Do not suppress TypeScript errors without explanation.
-
----
-
-# 63. React / Next.js Guidance
-
-Prefer Server Components where suitable.
-
-Use Client Components only where interaction requires them.
-
-Good Client Component candidates:
-
-- tables with client filters,
-- dialogs,
-- production controls,
-- chart interactions,
-- timers.
-
-Do not make the whole app `"use client"`.
-
----
-
-# 64. State Management
-
-Do not introduce global state libraries by default.
-
-Prefer:
-
-- URL/search params,
-- server data,
-- local component state,
-- form state.
-
-Add a global state tool only when there is a proven need.
-
----
-
-# 65. Data Fetching
-
-Prefer framework-native server data loading.
-
-Keep business queries in reusable service/repository functions.
-
-Avoid fetching the same data separately in multiple nested components.
-
----
-
-# 66. Security
-
-Never expose:
-
-- database credentials,
-- API secrets,
-- server tokens,
-- password hashes.
-
-Use environment variables.
-
-Validate uploads if file attachment features are added.
-
----
-
-# 67. File Uploads
-
-Future calibration certificates or documents should store:
-
-- metadata in DB,
-- object/file path externally.
-
-Validate:
-
-- type,
-- size,
-- ownership,
-- access permission.
-
-Do not store huge binaries directly in standard relational rows unless required.
-
----
-
-# 68. Environment Variables
-
-Document required environment variables in:
-
-```text
-.env.example
-```
-
-Never commit real credentials.
-
----
-
-# 69. Migration Rules
-
-For Prisma:
-
-- make schema changes deliberately,
-- create migration,
-- verify existing data,
-- avoid destructive migrations unless explicitly approved.
-
-For required fields added to existing populated tables, provide migration/backfill logic.
-
----
-
-# 70. Implementation Order
-
-When building from scratch, follow:
-
-## Phase 1
-
-```text
-Auth
-Roles
+Vite frontend
+Express backend
+Prisma + Neon
+Authentication
+6-role RBAC
+Application shell
 Users
-Master Data
-App Shell
+Customers
+Suppliers
+Products
+Materials
+Machines
 ```
 
-## Phase 2
+## Phase 2 — Orders & Scheduling
 
 ```text
-Orders
-Material Requirement
-Scheduling
+Admin order entry
+BOM calculation
+Stock check
+Shortage logic
+Schedule recommendation
+Admin confirmation
+Machine schedule
 ```
 
-## Phase 3
+## Phase 3 — Purchasing / Store / Receiving
 
 ```text
-Purchasing
-Receiving
-Store
-Inventory
+Material shortages
+PO
+Supplier ETA
+GRN
+Inventory transactions
+Reservations
+Material issue
 ```
 
-## Phase 4
+## Phase 4 — QC
 
 ```text
 Incoming QC
+Release/rejection
 Production QC
+QC reminders
+Sample entry
+Calculations
 SPC
 Final QC
 ```
 
-## Phase 5
+## Phase 5 — Production
 
 ```text
-Operator Production
+Operator My Job
+Start/Pause/Resume/End
 Defects
 Downtime
 Cartons
+Progress
 ```
 
-## Phase 6
+## Phase 6 — Finished Goods / Delivery
 
 ```text
-Finished Goods
-Delivery
+FG transfer
+Store receipt
+FG inventory
+Delivery workflow
 ```
 
-## Phase 7
+## Phase 7 — Management
 
 ```text
-Dashboard
+MD dashboard
 Reports
-Audit
-Polish
+Alerts
+Audit trail
+PDF/Excel
+UI polish
 ```
-
-Do not build advanced forecasting before the core workflow works.
 
 ---
 
-# 71. Definition of Done
+# 81. Do Not Build Everything at Once
 
-A feature is not complete until:
+Implement clean vertical slices.
 
-1. UI is implemented.
-2. Server-side validation exists.
-3. Permission checks exist.
-4. Database changes are correct.
-5. Audit logging is added when relevant.
-6. Error/loading/empty states exist.
-7. Main happy path works.
-8. Important failure path works.
-9. TypeScript passes.
-10. Lint/tests pass where configured.
-11. UI follows `design.md`.
-12. Workflow follows `prd.md`.
+Do not create every page/table/route in one giant untested change.
+
+Prefer incremental phases that can be manually tested.
 
 ---
 
-# 72. Agent Workflow
+# 82. Agent Workflow Before Coding
 
-When asked to implement a feature:
+For each significant task:
 
-## Step 1
-
-Read relevant sections of:
-
-```text
-prd.md
-design.md
-AGENTS.md
-```
-
-## Step 2
-
-Inspect existing:
-
-```text
-schema
-routes
-components
-auth
-permissions
-services
-```
-
-## Step 3
-
-Plan the smallest complete change.
-
-## Step 4
-
-Implement backend/domain logic first where the feature has business rules.
-
-## Step 5
-
-Implement UI.
-
-## Step 6
-
-Add permission and validation checks.
-
-## Step 7
-
-Run:
-
-```text
-typecheck
-lint
-tests
-build
-```
-
-as applicable.
-
-## Step 8
-
-Fix errors introduced by the change.
-
-## Step 9
-
-Summarize:
-
-- what changed,
-- files changed,
-- migrations,
-- assumptions,
-- remaining limitations.
+1. Read relevant PRD sections.
+2. Read relevant `design.md`.
+3. Read `AGENTS.md`.
+4. Inspect existing frontend.
+5. Inspect existing backend.
+6. Inspect Prisma schema.
+7. Inspect current routes/services.
+8. Identify already-completed work.
+9. Create a concise implementation plan.
+10. Implement the smallest complete solution.
 
 ---
 
-# 73. Do Not Do These Things
+# 83. Implementation Sequence
+
+Where appropriate:
+
+```text
+Prisma schema/migration
+→ validator
+→ service
+→ repository/query
+→ controller
+→ route
+→ authorization
+→ frontend API client
+→ React page/component
+→ loading/error/empty state
+→ tests
+```
+
+Business logic should not be buried in React.
+
+---
+
+# 84. Verification
+
+Before finishing a change, inspect the actual scripts in `package.json`.
+
+Run appropriate existing checks such as:
+
+Frontend:
+
+```bash
+npm run lint
+npm run build
+npm test
+```
+
+Backend:
+
+```bash
+npm run lint
+npm test
+```
+
+Prisma:
+
+```bash
+npx prisma validate
+```
+
+Do not claim checks passed unless they were actually run.
+
+---
+
+# 85. Definition of Done
+
+A feature is complete when:
+
+1. PRD business rules are followed.
+2. `design.md` UX is followed.
+3. backend permission enforcement exists.
+4. backend input validation exists.
+5. relevant writes are safe/transactional.
+6. audit logging exists where required.
+7. UI includes loading/error/empty states.
+8. happy path works.
+9. important failure path works.
+10. configured lint/build/tests pass.
+11. no TypeScript/Next.js was introduced.
+
+---
+
+# 86. End-of-Task Summary
+
+After implementing, summarize:
+
+```text
+What changed
+Files changed
+API routes added/updated
+Prisma migration/schema changes
+Permissions added
+Business rules implemented
+Manual testing steps
+Missing real company data
+Known limitations
+```
+
+---
+
+# 87. Unknown Company Values
+
+Never guess real production values.
+
+If unknown:
+
+- create a configurable master-data field,
+- use clearly marked development examples only if needed,
+- note the required company confirmation.
+
+Examples:
+
+```text
+machine rate
+BOM quantity
+carton quantity
+weight limits
+sample frequency
+supplier lead time
+```
+
+---
+
+# 88. Prohibited Behaviors
 
 Do not:
 
-- redesign the workflow without instruction,
-- remove required SOP stages,
-- make incoming stock immediately available,
-- allow Operator to access admin functions,
-- allow Purchasing to directly manipulate physical inventory,
-- allow Store to make QC decisions,
-- automatically mark estimated production as confirmed output,
-- auto-reschedule jobs without Admin confirmation,
-- silently overwrite QC history,
-- delete inventory transactions,
-- build cartoon-style interfaces,
-- add unnecessary infrastructure,
-- create duplicate copies of order information in every module,
-- hard-code product-specific values if they belong in master data,
-- generate fake production/QC data in real workflows.
+- bypass incoming QC,
+- release quarantine stock automatically,
+- start production without issued materials,
+- let Purchasing directly modify physical stock,
+- let Store make QC quality decisions,
+- give Operator Admin functions,
+- silently reschedule production,
+- treat estimated output as confirmed output,
+- overwrite QC history silently,
+- delete inventory transaction history,
+- hard-code unknown company values,
+- duplicate data unnecessarily,
+- generate fake production data in live workflows,
+- add TypeScript,
+- move the app to Next.js,
+- make the UI cartoonish.
 
 ---
 
-# 74. Preferred Decision Rule
+# 89. Preferred Decision Rule
 
-When unsure between two implementations, prefer the one that:
+When two implementation choices are possible, prefer the one that:
 
 1. follows the SOP,
-2. reduces operator effort,
-3. keeps data traceable,
-4. avoids duplicate entry,
-5. gives the responsible role ownership,
-6. is easy to maintain,
-7. can be extended later.
+2. reduces duplicate entry,
+3. gives the correct role ownership,
+4. preserves traceability,
+5. keeps Operator use simple,
+6. keeps authoritative business logic on the Express backend,
+7. is easy to maintain,
+8. can scale later.
 
 ---
 
-# 75. Core Product Mental Model
+# 90. Final Agent Principle
 
-The system is not a collection of unrelated forms.
+For every field ask:
 
-It is one connected manufacturing workflow.
+> **Does the system already know this?**
 
-The central entities are:
+If yes:
 
 ```text
-Order
-Material
-Purchase
-GRN
-Inspection
-Inventory
-Schedule
-Production Run
-QC Check
-Batch
-Carton
-Finished Goods
-Delivery
+Auto-fill it.
 ```
 
-Paper forms are generated views of these records.
+For every department handoff ask:
 
-Do not build each paper form as an isolated database island.
-
----
-
-# 76. Final Agent Rule
-
-The best EverDryPack implementation should make the factory workflow feel simpler than the paper process.
-
-For each feature ask:
-
-> Can the system already know this value?
+> **Does another role need to act on this?**
 
 If yes:
 
-**Auto-fill it.**
+```text
+Create the status/task/notification automatically.
+```
 
-> Does another department need this information?
+For every sensitive action ask:
 
-If yes:
+> **Which role owns this decision?**
 
-**Send it through workflow/status/notification.**
+Enforce that ownership in Express middleware/services.
 
-> Does the user really need another form?
+For every paper form ask:
 
-If no:
-
-**Do not create one.**
-
-> Is this action part of the approved SOP?
+> **Can the form be generated from existing connected records?**
 
 If yes:
 
-**Preserve it and make it easier to perform digitally.**
+```text
+Generate it instead of asking users to type it again.
+```
+
+The objective is to build a connected manufacturing workflow using:
+
+```text
+Vite + React.js + JavaScript
+Node.js + Express.js + JavaScript
+Prisma + PostgreSQL / Neon
+```
+
+while preserving the EverDryPack SOP and keeping the system simple for daily factory use.
